@@ -1,0 +1,369 @@
+---
+title: "F1 Driver Info"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: row
+    vertical_layout: scroll
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(shiny)
+library(dplyr)
+library(reshape2)
+library(ggpubr)
+library(plotly)
+library(Hmisc)
+library(gridExtra)
+library(lubridate)
+#setwd("~/Desktop/Side_proj/f1_driver_dashboard/data/")
+### importing all the required files
+quali <- read.csv("data/qualifying.csv")
+res <- read.csv("data/results.csv")
+nat <- read.csv("data/nationalityToCountry.csv")
+drivers <- read.csv("data/drivers.csv")
+circuits <- read.csv("data/circuits.csv")
+sche <- read.csv("data/schedule.csv")
+constructors <- read.csv("data/constructors.csv")
+driv_st <- read.csv("data/driverStandings.csv")
+### setting up input for gauge chart
+const_subset <- constructors %>% select(constructorId, color)
+sche_subset <- sche %>% select(season, round, circuitId)
+quali_subset <- quali %>% select(position, driverId, season, round)
+res_subset <- res %>% select(driverId, season, round, position,FastestLap.rank, constructorId) 
+cir_subset <- circuits %>% select(circuitId, Location.country)
+dri_subset <- drivers %>% select(driverId, nationality)
+
+const_subset <- constructors %>% select(constructorId, color)
+summary <- quali_subset %>% full_join(res_subset, by=c("season","round","driverId"))
+summary <- summary %>% full_join(sche_subset, by=c("season","round"))
+summary <- summary %>% rename(Quali_pos=position.x, Res_pos=position.y )
+gauge_dat <- summary %>% full_join(const_subset, by="constructorId")
+
+```
+
+Sidebar {.sidebar}
+=======================================================================
+
+### Please select a driver
+
+```{r}
+selectInput("driver", "Driver:",names(table(res$driverId)>5)[which(table(res$driverId)>5)], selected = 'hamilton' )
+```
+This is a dashboard to display performance of formula 1 driver thhrough out their career. 
+
+P.S.(1). Only drivers with more than 5 races are included in the selection. 
+
+P.S.(2). The earlist qualifying data is from 1994. We are not able to generate any relevant plot before that year.
+
+P.S.(3). The earlist fastest lap data is from 2004. We are not able to generate any relevant plot before that year.
+
+P.S.(4). WDC points each season has not been normalized by the point scheme of the year. 
+
+Dashboard
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### Age {.value-box}
+
+```{r}
+
+birth_year <- function(id) {
+  start <- as.Date(drivers$dateOfBirth[which(drivers$driverId==id)])
+  end <- as.Date(Sys.Date(), format='%d/%m/%y')
+  value <- floor(time_length(interval(start,end),"years")) 
+  return(value)
+}
+renderValueBox({
+  valueBox(
+    value = birth_year(input$driver),
+    icon = "fa-birthday-cake"
+  )
+})
+```
+
+### Years in Formula 1 {.value-box}
+
+```{r}
+years_in_f1 <- function(id) {
+  return(length(unique(res$season[which(res$driverId==id)])))
+}
+renderValueBox({
+  valueBox(
+    value = years_in_f1(input$driver),
+    icon = "fa-calendar"
+  )
+})
+```
+
+### Number of WDC {.value-box}
+```{r}
+wdc <- function(id) {
+  WDC = list()
+  for(i in unique(driv_st$season)) {
+    tmp = driv_st[which(driv_st$season==i),]
+    max_round = max(tmp$round)
+    tmp = tmp[which(tmp$round==max_round & tmp$position == 1),]
+    WDC = c(WDC, tmp$driverId)
+  }
+  return(length(which(WDC==id)))
+}
+renderValueBox({
+  valueBox(
+    value = wdc(input$driver),
+    icon = "fa-trophy"
+  )
+})
+```
+
+### Current team {.value-box}
+```{r}
+curr_team <- function(id){
+  tmp <- full_join(res %>% select (driverId, constructorId, season), 
+                   constructors %>% select(constructorId, name, color))
+  tmp <- tmp %>% filter(season == '2020') %>% distinct()
+  team <- tmp$name[which(tmp$driverId == id)]
+  if(length(team) == 0) {
+    team <- "N/A"
+  }
+  return(team)
+}
+renderValueBox({
+  valueBox(
+    value = curr_team(input$driver),
+    icon = "fa-group"
+  )
+})
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Number of Poles 
+```{r}
+renderGauge({
+  get_pole_val <- function(id) {
+  temp <- gauge_dat %>% filter(driverId == id)
+  tab <- melt(table(temp$Quali_pos))
+  dat <- list()
+  if (identical(which(tab$Var1==1), integer(0))) {
+    dat <- c(0,length(temp$Quali_pos))
+  } else {
+    dat <- c(tab$value[which(tab$Var1==1)], length(temp$Quali_pos))
+  }
+  return(dat)
+  }
+  dat <- get_pole_val(input$driver)
+  rate <- dat[1]
+  gauge(dat[1], min = 0, max = dat[2])
+})
+```
+
+### Number of Race Wins
+```{r}
+renderGauge({
+  get_race_val <- function(id) {
+  temp <- gauge_dat %>% filter(driverId == id)
+  tab <- melt(table(temp$Res_pos))
+  dat <- list()
+  if (identical(which(tab$Var1==1), integer(0))) {
+    dat <- c(0,length(temp$Quali_pos))
+  } else {
+    dat <- c(tab$value[which(tab$Var1==1)], length(temp$Quali_pos))
+  }
+  return(dat)
+  }
+  dat <- get_race_val(input$driver)
+  rate <- dat[1]
+  gauge(dat[1], min = 0, max = dat[2])
+})
+```
+
+### Number of Podiums
+```{r}
+renderGauge({
+  get_podium_val <- function(id) {
+  temp <- gauge_dat %>% filter(driverId == id)
+  tab <- melt(table(temp$Res_pos))
+  dat <- list()
+  if (identical(which(tab$Var1==1 | tab$Var1==2 | tab$Var1==3 ), integer(0))) {
+    dat <- c(0,length(temp$Quali_pos))
+  } else {
+    dat <- c(sum(tab$value[which(tab$Var1==1|tab$Var1==2|tab$Var1==3)]), length(temp$Quali_pos))
+  }
+  return(dat)
+  }
+  dat <- get_podium_val(input$driver)
+  rate <- dat[1]
+  gauge(dat[1], min = 0, max = dat[2])
+})
+```
+
+### Race with Fastest Lap
+```{r}
+renderGauge({
+  get_fl_val <- function(id) {
+  temp <- gauge_dat %>% filter(driverId == id)
+  tab <- melt(table(temp$FastestLap.rank))
+  dat <- list()
+  if (identical(which(tab$Var1==1 ), integer(0))) {
+    dat <- c(0,length(temp$Quali_pos))
+  } else {
+    dat <- c(sum(tab$value[which(tab$Var1==1)]), length(temp$Quali_pos))
+  }
+  return(dat)
+  }
+  dat <- get_fl_val(input$driver)
+  rate <- dat[1]
+  gauge(dat[1], min = 0, max = dat[2])
+})
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Result Qualifying v.s. Race Differential
+
+```{r}
+renderPlotly({
+summary <- summary %>% select(Quali_pos, Res_pos, driverId, season, circuitId)
+summary <- melt(summary, id=c("driverId","season","circuitId"))
+
+##### making plot for qualifying vs results #####
+##### qualifying position not availabe for very old races
+##### need some sort of a fix
+temp <- summary %>% filter(driverId == input$driver)
+max_y = max(temp$value)
+if(max(temp$season) == 2020) {
+  recent_year <- 2017:2019
+  if(min(temp$season) >2017) {
+    recent_year <- min(temp$season):2019
+  }
+} else {
+  recent_year <- (max(temp$season)-2):max(temp$season)
+  if(min(temp$season) > (max(temp$season)-2)) {
+    recent_year <- min(temp$season):max(temp$season)
+  }
+}
+temp1 <- temp %>% filter(season %in% recent_year)
+p = ggplot(temp1, aes(x=variable, y=value, color = variable, text = paste0('Circuit: ', circuitId))) + theme_bw() +
+  geom_boxplot(width = 0.25, color = 'black', outlier.color = NA) + geom_jitter(width = 0.25, size = 0.5)+
+  facet_wrap(~ season) +
+  theme(axis.title = element_text(face="bold"), legend.position = "none",
+        axis.text = element_text(face="bold")) + ylim(1,max_y) + 
+  xlab("") + ylab("Position") + scale_x_discrete(labels = c("Quali","Race")) + 
+  scale_color_manual(values = c("grey","firebrick2")) 
+p = ggplotly(p, tooltip = "text")
+for(i in 1:floor((length(p$x$data)/2))){
+  p$x$data[[i]]$marker$opacity = 0 
+}
+p
+})
+```
+
+### Performance at different teams
+```{r}
+renderPlotly({
+  summary <- res_subset %>% full_join(const_subset, by="constructorId")
+  summary <- summary %>% full_join(sche_subset, by=c("season","round"))
+  temp <- summary %>% filter(driverId == input$driver)
+  max_y <- max(temp$position)
+  temp <- temp %>% mutate(text = paste0("Season:",season,"<br>Round:",round,"<br>Circuit:",circuitId))
+  d <- ggplot(temp, aes(x=reorder(constructorId ,position,FUN = median), y=position, text = text)) + theme_bw() +
+    geom_boxplot(width = 0.25, color = 'black', outlier.color = NA) + geom_jitter(width = 0.25,  color = temp$color, size = 0.5) +
+    theme(axis.title = element_text(face="bold"), legend.position = "none",
+          axis.text = element_text(face="bold")) + 
+    ylim(1,max_y) + xlab("Constructor") + ylab("Position") 
+  ggplotly(d)
+  d = ggplotly(d, tooltip = "text")
+  d$x$data[[1]]$marker$opacity = 0 
+  d
+})
+```
+
+### Race Performance Aganist Teammate
+```{r}
+renderPlotly({
+  summary <- res_subset %>% full_join(res_subset, by = c("season","round","constructorId"))
+  summary <- summary %>% filter(driverId.x!= driverId.y)
+  summary <- summary %>% mutate(pos_change = position.x - position.y)
+  summary <- summary %>% full_join(const_subset, by="constructorId")
+  summary <- summary %>% full_join(sche_subset, by=c("season","round"))
+  temp <- summary %>% filter(driverId.x == input$driver)
+  temp <- temp %>% mutate(text = paste0("Season:",season,"<br>Round:",round,"<br>Circuit:",circuitId))
+  max_y = max(temp$position.x)
+  c = ggplot(temp, aes(x=reorder(driverId.y ,pos_change,FUN = median), y=pos_change, text = text)) + theme_bw() +
+    geom_boxplot(width = 0.25, color = 'black', outlier.color = NA) + geom_jitter(width = 0.25,color = temp$color,size = 0.5) +  
+    theme(axis.title = element_text(face="bold"), legend.position = "none",
+          axis.text = element_text(face="bold"), axis.text.x = element_text(angle = 30, hjust = 1)) + 
+    ylim(-max_y,max_y) + xlab("Teammate") + ylab("Position relative to teammate") 
+  ggplotly(c)
+  c = ggplotly(c, tooltip = "text")
+  c$x$data[[1]]$marker$opacity = 0 
+  c
+})
+```
+
+### Home Grand Prix Performance
+```{r}
+renderPlotly({
+  summary <- full_join(res_subset, sche_subset, by=c("round","season"))
+  summary <- full_join(summary, dri_subset, by ="driverId")
+  summary <- full_join(summary, cir_subset, by ="circuitId")
+  summary <- full_join(summary, nat, by="nationality")
+  summary <- full_join(summary, constructors, by = "constructorId")
+  summary <- summary %>% mutate(home = Location.country == country)
+  temp <- summary %>% filter(driverId == input$driver)
+  temp <- temp %>% mutate(text = paste0("Season:",season,"<br>Round:",round,"<br>Circuit:",circuitId))
+  j = ggplot(temp, aes(x=home, y= position)) + geom_boxplot(width = 0.25, outlier.color = NA) + 
+    geom_jitter(width = 0.25,  color = temp$color, size = 0.5) + theme_bw() + 
+    xlab("Home Grand Prix?") + ylab("Position") + theme(axis.title = element_text(face="bold"))
+  j = ggplotly(j)
+  j$x$data[[1]]$marker$opacity = 0 
+  j
+})
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Track Performance
+```{r}
+renderPlotly({
+  summary <- res_subset %>% full_join(sche_subset, by=c("season","round"))
+  summary <- summary %>% full_join(const_subset, by="constructorId")
+  summary <- summary %>% select(position, driverId, season, circuitId, color, round)
+  
+  ##### making plot for qualifying vs results #####
+  temp <- summary %>% filter(driverId == input$driver)
+  temp <- temp %>% mutate(text = paste0("Season:",season,"<br>Round:",round,"<br>Circuit:",circuitId))
+  max_y = max(temp$position)
+  b = ggplot(temp, aes(x=reorder(circuitId,position,FUN = median), y=position, text = text)) + theme_bw() +
+    geom_boxplot(width = 0.25, color = 'black', outlier.color = NA) + geom_jitter(width = 0.25 ,color = temp$color, size = 0.5)+
+    theme(axis.title = element_text(face="bold"), legend.position = "none",
+          axis.text = element_text(face="bold"), axis.text.x = element_text(angle = 30, hjust = 1)) +
+    ylim(1,max_y) + xlab("Circuit") + ylab("Position") 
+  b = ggplotly(b, tooltip="text")
+  b$x$data[[1]]$marker$opacity = 0 
+  b
+})
+```
+
+### WDC Point Each Season
+```{r}
+renderPlotly({
+colnames(driv_st)[5] = 'driverId'
+res_subset <- res %>% select(driverId, constructorId, round, season)
+temp <- driv_st %>% full_join(res_subset, by=c("driverId", "round", "season"))
+temp <- temp %>% filter(driverId == input$driver)
+temp <- temp %>% mutate(text = paste0("Season:",season,"<br>Round:",round,"<br>Constructor:",constructorId))
+i = ggplot(temp, aes(x=round, y = points, group = season, color = as.factor(season), text = text)) + geom_line() + 
+  theme_bw() + labs(color = "Year", x = "Round", y = "Points") + 
+  theme(axis.title = element_text(face = "bold"))
+ggplotly(i, tooltip = "text")
+})
+```
+

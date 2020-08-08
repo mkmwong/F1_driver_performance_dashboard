@@ -1,0 +1,134 @@
+statusId,count,status
+1,6420,Finished
+2,142,Disqualified
+3,1024,Accident
+4,791,Collision
+5,2000,Engine
+6,793,Gearbox
+7,320,Transmission
+8,214,Clutch
+9,133,Hydraulics
+10,314,Electrical
+11,3576,+1 Lap
+12,1554,+2 Laps
+13,725,+3 Laps
+14,405,+4 Laps
+15,221,+5 Laps
+16,152,+6 Laps
+17,99,+7 Laps
+18,52,+8 Laps
+19,38,+9 Laps
+20,790,Spun off
+21,41,Radiator
+22,428,Suspension
+23,245,Brakes
+24,60,Differential
+25,130,Overheating
+26,26,Mechanical
+27,55,Tyre
+28,1,Driver Seat
+29,37,Puncture
+30,24,Driveshaft
+31,91,Retired
+32,33,Fuel pressure
+33,4,Front wing
+34,5,Water pressure
+35,1,Refuelling
+36,88,Wheel
+37,111,Throttle
+38,47,Steering
+39,4,Technical
+40,10,Electronics
+41,11,Broken wing
+42,19,Heat shield fire
+43,29,Exhaust
+44,121,Oil leak
+45,18,+11 Laps
+46,3,Wheel rim
+47,30,Water leak
+48,65,Fuel pump
+49,2,Track rod
+50,7,+17 Laps
+51,87,Oil pressure
+53,13,+13 Laps
+54,242,Withdrew
+55,12,+12 Laps
+56,1,Engine fire
+58,1,+26 Laps
+59,1,Tyre puncture
+60,100,Out of fuel
+61,8,Wheel nut
+62,172,Not classified
+63,4,Pneumatics
+64,54,Handling
+65,8,Rear wing
+66,3,Fire
+67,37,Wheel bearing
+68,31,Physical
+69,155,Fuel system
+70,2,Oil line
+71,2,Fuel rig
+72,1,Launch control
+73,7,Injured
+74,4,Fuel
+75,12,Power loss
+76,9,Vibrations
+77,9,107% Rule
+78,2,Safety
+79,2,Drivetrain
+80,128,Ignition
+81,1025,Did not qualify
+82,13,Injury
+83,29,Chassis
+84,17,Battery
+85,2,Stalled
+86,99,Halfshaft
+87,1,Crankshaft
+88,32,+10 Laps
+89,2,Safety concerns
+90,1,Not restarted
+91,31,Alternator
+92,1,Underweight
+93,1,Safety belt
+94,14,Oil pump
+95,49,Fuel leak
+96,8,Excluded
+97,331,Did not prequalify
+98,36,Injection
+99,14,Distributor
+100,10,Driver unwell
+101,144,Turbo
+102,1,CV joint
+103,6,Water pump
+104,3,Fatal accident
+105,3,Spark plugs
+106,3,Fuel pipe
+107,1,Eye injury
+108,12,Oil pipe
+109,22,Axle
+110,3,Water pipe
+111,12,+14 Laps
+112,9,+15 Laps
+113,3,+25 Laps
+114,4,+18 Laps
+115,4,+22 Laps
+116,7,+16 Laps
+117,4,+24 Laps
+118,1,+29 Laps
+119,1,+23 Laps
+120,1,+21 Laps
+121,26,Magneto
+122,1,+44 Laps
+123,1,+30 Laps
+124,4,+19 Laps
+125,1,+46 Laps
+126,5,Supercharger
+127,1,+20 Laps
+128,1,+42 Laps
+129,1,Engine misfire
+130,27,Collision damage
+131,28,Power Unit
+132,5,ERS
+135,1,Brake duct
+136,1,Seat
+137,1,Damage

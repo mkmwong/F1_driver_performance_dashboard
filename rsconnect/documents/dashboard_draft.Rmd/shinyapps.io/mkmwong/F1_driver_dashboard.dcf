@@ -1,0 +1,12 @@
+name: F1_driver_dashboard
+title: F1_driver_dashboard
+username:
+account: mkmwong
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2653395
+bundleId: 3491616
+url: https://mkmwong.shinyapps.io/F1_driver_dashboard/
+when: 1596929010.13395
+asMultiple: FALSE
+asStatic: FALSE
