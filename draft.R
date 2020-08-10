@@ -338,7 +338,8 @@ length(unique(res$season[which(res$driverId==driver)]))
 WDC = list()
 for(i in unique(driv_st$season)) {
   tmp = driv_st[which(driv_st$season==i),]
-  max_round = max(tmp$round)
+  sche_subset_tmp = sche_subset[which(sche_subset$season==i),]
+  max_round = max(sche_subset_tmp$round)
   tmp = tmp[which(tmp$round==max_round & tmp$position == 1),]
   print(tmp)
   WDC = c(WDC, tmp$driverId)
